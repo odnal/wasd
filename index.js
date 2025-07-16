@@ -58,9 +58,11 @@ const CreateGame = function (name) {
             }
         },
         render(context) {
+            const width = context.canvas.width;
+            const height = context.canvas.height;
+            context.clearRect(0, 0, width, height);
+
             GameTitle(name).render(context);
-            let x = context.canvas.width / 2;
-            let y = context.canvas.height / 2;
             drawCircle(context, pos, radius);
         },
         keyDown(event) {
