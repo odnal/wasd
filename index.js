@@ -1,12 +1,27 @@
 class V2 {
     constructor(x, y) {
-        this.x = y;
+        this.x = x;
         this.y = y;
     }
 
     add(that) {
-        this.x += that;
+        return new V2(this.x + that.x, this.y + that.y);
+    }
+
+    up(that) {
+        this.y += (-that);
+    }
+
+    down(that) {
         this.y += that;
+    }
+
+    left(that) {
+        this.x -= that;
+    }
+
+    right(that) {
+        this.x += that;
     }
 }
 
@@ -48,12 +63,28 @@ const CreateGame = function (name) {
     }
 
     return {
+        init(context) {
+            pos.x = context.canvas.width/2;
+            pos.y = context.canvas.height/2;
+        }, 
         update(dt) {
             for (let key of pressedKeys) {
-                if (key == 'KeyW') {
-                    pos.add(dt);
-                    console.log(`${key}`);
-                    console.log(`(${pos.x}, ${pos.y})`)
+                switch (key) {
+                    case "KeyW":
+                        console.log(pos);
+                        pos.up(dt);
+                        break;
+                    case "KeyS":
+                        pos.down(dt);
+                        break;
+                    case "KeyA":
+                        pos.left(dt);
+                        break;
+                    case "KeyD":
+                        pos.right(dt);
+                        break;
+                    default:
+                        console.log(`${key} not supported.`);
                 }
             }
         },
@@ -67,6 +98,9 @@ const CreateGame = function (name) {
         },
         keyDown(event) {
             pressedKeys.add(event.code);
+        },
+        keyUp(event) {
+            pressedKeys.delete(event.code);
         }
     };
 };
@@ -81,14 +115,15 @@ const CreateGame = function (name) {
     canvas.height = window.innerHeight;
 
     // Create Game Context: DOM context and canvas width/height
-    let game = CreateGame("WASF");
+    let game = CreateGame("WASD");
+    game.init(context)
 
     let start;
     function step(timestamp) {
         if (start === undefined) {
             start = timestamp;
         }
-        const dt = (timestamp - start);
+        const dt = (timestamp - start) * 0.5;
         start = timestamp;
 
         game.update(dt);
@@ -103,4 +138,7 @@ const CreateGame = function (name) {
         game.keyDown(event);
     })
 
+    window.addEventListener("keyup", event => {
+        game.keyUp(event);
+    })
 })();
