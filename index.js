@@ -1,53 +1,104 @@
-const GreateGame = function (name) {
-    const canvas = document.getElementById("game");
-    const context = canvas.getContext("2d");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+class V2 {
+    constructor(x, y) {
+        this.x = y;
+        this.y = y;
+    }
 
-    const game = { canvas, context };
+    add(that) {
+        this.x += that;
+        this.y += that;
+    }
+}
 
+const GameTitle = function (name) {
+    let alpha = 1.0; // NOTE: let an update function modify this value for the opacity of the title
+
+    return {
+        render(context) { 
+            const centerX = context.canvas.width / 2;
+            const centerY = context.canvas.height / 2;
+
+            context.fillStyle = `rgba(255, 255, 255, 0.8)`;
+            context.font = "48px Iosevka-Bold";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+            context.fillText(name, centerX, centerY);
+        },
+    }
+}
+
+const CreateGame = function (name) {
     console.log(`Game "${name}" initialized.`);
-    console.log(game);
 
+    const title = GameTitle();
     const radius = 69;
-    const centerX = game.canvas.width/2;
-    const centerY = game.canvas.height/2;
+    let alpha = 0.8;
 
-    function drawCircle(context, x, y, radius) {
+    let pos = new V2(0, 0);
+
+    let pressedKeys = new Set();
+    console.log(pressedKeys);
+
+    function drawCircle(context, pos, radius) {
         context.beginPath();
-        context.arc(x, y, radius, 0, 2 * Math.PI);
+        context.arc(pos.x, pos.y, radius, 0, 2 * Math.PI);
         context.lineWidth = 3;
-        context.strokeStyle = `rgba(255, 255, 255, 0.8)`;
+        context.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
         context.stroke();
     }
 
     return {
-        init() {
-            console.log(`game.canvas.width:  ${game.canvas.width}`);
-            console.log(`game.canvas.height: ${game.canvas.height}`);
-
-            game.context.fillStyle = `rgba(255, 255, 255, 0.8)`;
-            game.context.font = "48px Iosevka-Bold";
-            game.context.textAlign = "center";
-            game.context.textBaseline = "middle";
-            game.context.fillText(name, centerX, centerY);
+        update(dt) {
+            for (let key of pressedKeys) {
+                if (key == 'KeyW') {
+                    pos.add(dt);
+                    console.log(`${key}`);
+                    console.log(`(${pos.x}, ${pos.y})`)
+                }
+            }
         },
-        update() {
-            let x = game.canvas.width / 2;
-            let y = game.canvas.height / 2;
-            drawCircle(game.context, x, y, radius);
+        render(context) {
+            GameTitle(name).render(context);
+            let x = context.canvas.width / 2;
+            let y = context.canvas.height / 2;
+            drawCircle(context, pos, radius);
         },
+        keyDown(event) {
+            pressedKeys.add(event.code);
+        }
     };
 };
 
 
 // IIFE - "Immediately Invoked Function Expression"
 (() => {
+
+    const canvas = document.getElementById("game");
+    const context = canvas.getContext("2d");
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
     // Create Game Context: DOM context and canvas width/height
-    let game = GreateGame("WASF");
-    game.init();
-    game.update();
+    let game = CreateGame("WASF");
 
     // TODO: game loop
+    let start;
+    function step(timestamp) {
+        if (start === undefined) {
+            start = timestamp;
+        }
+        const dt = (timestamp - start);
+
+        game.update(dt);
+        game.render(context);
+
+        window.requestAnimationFrame(step);
+    }
+
+    window.requestAnimationFrame(step);
+
+    window.addEventListener("keydown", event => {
+        game.keyDown(event);
+    })
 
 })();
