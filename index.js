@@ -4,15 +4,20 @@ const GreateGame = function (name) {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    let game = { canvas, context };
+    const game = { canvas, context };
 
     console.log(`Game "${name}" initialized.`);
     console.log(game);
 
-    let radius = 69;
+    const radius = 69;
+    const centerX = game.canvas.width/2;
+    const centerY = game.canvas.height/2;
+
     function drawCircle(context, x, y, radius) {
         context.beginPath();
         context.arc(x, y, radius, 0, 2 * Math.PI);
+        context.lineWidth = 3;
+        context.strokeStyle = `rgba(255, 255, 255, 0.8)`;
         context.stroke();
     }
 
@@ -21,10 +26,11 @@ const GreateGame = function (name) {
             console.log(`game.canvas.width:  ${game.canvas.width}`);
             console.log(`game.canvas.height: ${game.canvas.height}`);
 
-            game.context.font = "48px Iosevka"; // TODO: include font tff in the directory itself to auto host it.
+            game.context.fillStyle = `rgba(255, 255, 255, 0.8)`;
+            game.context.font = "48px Iosevka-Bold";
             game.context.textAlign = "center";
-            console.log(game.context.font);
-            game.context.fillText("WASD", game.canvas.width/2, game.canvas.height/2); // TODO: center WASD within circle.
+            game.context.textBaseline = "middle";
+            game.context.fillText(name, centerX, centerY);
         },
         update() {
             let x = game.canvas.width / 2;

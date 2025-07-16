@@ -1,0 +1,8 @@
+@font-face {
+    src: url("Iosevka-Bold.ttf");
+    font-family: "Iosevka-Bold";
+}
+
+body {
+    overflow: hidden;
+}
