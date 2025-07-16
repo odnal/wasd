@@ -81,13 +81,13 @@ const CreateGame = function (name) {
     // Create Game Context: DOM context and canvas width/height
     let game = CreateGame("WASF");
 
-    // TODO: game loop
     let start;
     function step(timestamp) {
         if (start === undefined) {
             start = timestamp;
         }
         const dt = (timestamp - start);
+        start = timestamp;
 
         game.update(dt);
         game.render(context);
