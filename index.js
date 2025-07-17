@@ -4,36 +4,43 @@ class V2 {
         this.y = y;
     }
 
-    add(that) {
-        return new V2(this.x + that.x, this.y + that.y);
+    up(amount) {
+        this.y += (-amount);
     }
 
-    up(that) {
-        this.y += (-that);
+    down(amount) {
+        this.y += amount;
     }
 
-    down(that) {
-        this.y += that;
+    left(amount) {
+        this.x -= amount;
     }
 
-    left(that) {
-        this.x -= that;
-    }
-
-    right(that) {
-        this.x += that;
+    right(amount) {
+        this.x += amount;
     }
 }
 
 const GameTitle = function (name) {
-    let alpha = 1.0; // NOTE: let an update function modify this value for the opacity of the title
+
+    let alpha = 1.0;
+    let dalpha = -1.0;
+    const rate = 0.04;
 
     return {
+        fadeIn(dt) {
+            const scaled_dt = dt * rate;
+            alpha -= dalpha * scaled_dt;
+        },
+        fadeOut(dt) {
+            alpha += dalpha * dt * rate;
+            if 
+        },
         render(context) { 
             const centerX = context.canvas.width / 2;
             const centerY = context.canvas.height / 2;
 
-            context.fillStyle = `rgba(255, 255, 255, 0.8)`;
+            context.fillStyle = `rgba(255, 255, 255, ${alpha})`;
             context.font = "48px Iosevka-Bold";
             context.textAlign = "center";
             context.textBaseline = "middle";
@@ -45,8 +52,9 @@ const GameTitle = function (name) {
 const CreateGame = function (name) {
     console.log(`Game "${name}" initialized.`);
 
-    const title = GameTitle();
+    const title = GameTitle(name);
     const radius = 69;
+    const speed = 12.34;
     let alpha = 0.8;
 
     let pos = new V2(0, 0);
@@ -68,20 +76,25 @@ const CreateGame = function (name) {
             pos.y = context.canvas.height/2;
         }, 
         update(dt) {
+            // TODO: title.fadeIn()
+            const distance = dt * speed;
             for (let key of pressedKeys) {
                 switch (key) {
                     case "KeyW":
-                        console.log(pos);
-                        pos.up(dt);
+                        pos.up(distance);
+                        title.fadeOut(dt);
                         break;
                     case "KeyS":
-                        pos.down(dt);
+                        pos.down(distance);
+                        title.fadeOut(dt);
                         break;
                     case "KeyA":
-                        pos.left(dt);
+                        pos.left(distance);
+                        title.fadeOut(dt);
                         break;
                     case "KeyD":
-                        pos.right(dt);
+                        pos.right(distance);
+                        title.fadeOut(dt);
                         break;
                     default:
                         console.log(`${key} not supported.`);
@@ -93,7 +106,7 @@ const CreateGame = function (name) {
             const height = context.canvas.height;
             context.clearRect(0, 0, width, height);
 
-            GameTitle(name).render(context);
+            title.render(context);
             drawCircle(context, pos, radius);
         },
         keyDown(event) {
@@ -117,13 +130,18 @@ const CreateGame = function (name) {
     // Create Game Context: DOM context and canvas width/height
     let game = CreateGame("WASD");
     game.init(context)
+    const FRAME_COUNT = 24;
 
     let start;
     function step(timestamp) {
         if (start === undefined) {
             start = timestamp;
         }
-        const dt = (timestamp - start) * 0.5;
+        const dt = (timestamp - start) * 0.06;
+        const fps =  FRAME_COUNT / dt;
+        //console.log(`Frame Count:   ${FRAME_COUNT}`);
+        //console.log(`Elapsed Time: ${dt}`);
+        //console.log(`FPS:          ${fps}`);
         start = timestamp;
 
         game.update(dt);
