@@ -21,30 +21,54 @@ class V2 {
     }
 }
 
+let keyState = {
+    "KeyW": {label: "W", learned: false, alpha: 1.0},
+    "KeyA": {label: "A", learned: false, alpha: 1.0},
+    "KeyS": {label: "S", learned: false, alpha: 1.0},
+    "KeyD": {label: "D", learned: false, alpha: 1.0},
+}
+
 const GameTitle = function (name) {
 
-    let alpha = 1.0;
-    let dalpha = -1.0;
-    const rate = 0.04;
+    let dalpha = 0.0;
+    const rate = 4.0;
 
     return {
-        fadeIn(dt) {
-            const scaled_dt = dt * rate;
-            alpha -= dalpha * scaled_dt;
+        update(dt) {
+            for (const key in keyState) {
+                if (keyState[key].learned && keyState[key].alpha > 0) {
+                    keyState[key].alpha += (dalpha * dt) * rate;
+                    if (keyState[key].alpha < 0) keyState[key].alpha = 0; // clamp tp 0
+                }
+            }
         },
-        fadeOut(dt) {
-            alpha += dalpha * dt * rate;
-            if 
+        fadeIn() {
+            dalpha = 1.0; // increases alpha
+        },
+        fadeOut() {
+            dalpha = -1.0; // decareases alpa
         },
         render(context) { 
             const centerX = context.canvas.width / 2;
             const centerY = context.canvas.height / 2;
 
-            context.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-            context.font = "48px Iosevka-Bold";
-            context.textAlign = "center";
-            context.textBaseline = "middle";
-            context.fillText(name, centerX, centerY);
+            const keys = Object.keys(keyState); // get iterable array of object keys
+
+            for (let i = 0; i < keys.length; i++) {
+                const key = keys[i];
+                const state = keyState[key];
+
+                context.fillStyle = `rgba(255, 255, 255, ${state.alpha})`;
+                context.font = "48px Iosevka-Bold";
+                context.textAlign = "center";
+                context.textBaseline = "middle";
+                context.fillText(
+                    state.label, 
+                    centerX + (i-1.5) * 30, 
+                    centerY
+                );
+            }
+            
         },
     }
 }
@@ -54,8 +78,8 @@ const CreateGame = function (name) {
 
     const title = GameTitle(name);
     const radius = 69;
-    const speed = 12.34;
-    let alpha = 0.8;
+    const speed = 1000;
+    let alpha = 1;
 
     let pos = new V2(0, 0);
 
@@ -76,30 +100,26 @@ const CreateGame = function (name) {
             pos.y = context.canvas.height/2;
         }, 
         update(dt) {
-            // TODO: title.fadeIn()
             const distance = dt * speed;
             for (let key of pressedKeys) {
                 switch (key) {
                     case "KeyW":
                         pos.up(distance);
-                        title.fadeOut(dt);
                         break;
                     case "KeyS":
                         pos.down(distance);
-                        title.fadeOut(dt);
                         break;
                     case "KeyA":
                         pos.left(distance);
-                        title.fadeOut(dt);
                         break;
                     case "KeyD":
                         pos.right(distance);
-                        title.fadeOut(dt);
                         break;
                     default:
                         console.log(`${key} not supported.`);
                 }
             }
+            title.update(dt);
         },
         render(context) {
             const width = context.canvas.width;
@@ -110,6 +130,10 @@ const CreateGame = function (name) {
             drawCircle(context, pos, radius);
         },
         keyDown(event) {
+            if (event.code in keyState && !keyState[event.code].learned) {
+                keyState[event.code].learned = true;
+                title.fadeOut()
+            }
             pressedKeys.add(event.code);
         },
         keyUp(event) {
@@ -130,18 +154,14 @@ const CreateGame = function (name) {
     // Create Game Context: DOM context and canvas width/height
     let game = CreateGame("WASD");
     game.init(context)
-    const FRAME_COUNT = 24;
 
     let start;
     function step(timestamp) {
         if (start === undefined) {
             start = timestamp;
         }
-        const dt = (timestamp - start) * 0.06;
-        const fps =  FRAME_COUNT / dt;
-        //console.log(`Frame Count:   ${FRAME_COUNT}`);
+        const dt = (timestamp - start) * 0.001;
         //console.log(`Elapsed Time: ${dt}`);
-        //console.log(`FPS:          ${fps}`);
         start = timestamp;
 
         game.update(dt);
