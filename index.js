@@ -5,9 +5,36 @@ class V2 {
     }
 
     add(that) {
-        this.x + that.x;
-        this.y + that.y;
+        this.x += that.x;
+        this.y += that.y;
+        return this;
     }
+
+    sub(that) {
+        this.x -= that.x;
+        this.y -= that.y;
+        return this;
+    }
+
+    scale(s) {
+        this.x *= s;
+        this.y *= s;
+        return this;
+    }
+
+    len() {
+        return Math.sqrt(this.x * this.x + this.y * this.y);
+    }
+
+    normalize() {
+        const n = this.len();
+        return new V2(this.x / n, this.y / n);
+    }
+
+    clone() {
+        return new V2(this.x, this.y);
+    }
+
     up(amount) {
         this.y += (-amount);
     }
@@ -30,6 +57,14 @@ let keyState = {
     "KeyA": {label: "A", learned: false, alpha: 1.0},
     "KeyS": {label: "S", learned: false, alpha: 1.0},
     "KeyD": {label: "D", learned: false, alpha: 1.0},
+}
+
+function drawCircle(context, playerPos, radius) {
+    context.beginPath();
+    context.arc(playerPos.x, playerPos.y, radius, 0, 2 * Math.PI);
+    context.lineWidth = 3;
+    context.strokeStyle = `rgba(255, 255, 255, 1)`;
+    context.stroke();
 }
 
 const GameTitle = function (name) {
@@ -77,14 +112,17 @@ const GameTitle = function (name) {
 }
 
 const CreateBullet = function(position, velocity) {
-    const pos = position.clone();
-    const vel = position.clone();
+    let pos = position.clone();
+    const vel = velocity.clone();
+    const BULLET_RADIUS = 42;
+
     return {
         update(dt) {
-            // TODO:
+            pos = pos.add(vel);
         },
         render(context) {
-            // TODO:
+            console.log(`${pos.x}, ${pos.y}`);
+            drawCircle(context, pos, BULLET_RADIUS);
         }
     }
 }
@@ -93,38 +131,32 @@ const CreateGame = function (name) {
     console.log(`Game "${name}" initialized.`);
 
     const title = GameTitle(name);
-    const radius = 69;
-    const speed = 1000;
     let alpha = 1;
+    const radius = 69;
+    const PLAYER_SPEED = 1000;
+    const BULLET_SPEED = 100;
 
-    let pos = new V2(0, 0);
+    let playerPos = new V2(0, 0);
+    const bullets = [];
 
     let pressedKeys = new Set();
     console.log(pressedKeys);
 
-    function drawCircle(context, pos, radius) {
-        context.beginPath();
-        context.arc(pos.x, pos.y, radius, 0, 2 * Math.PI);
-        context.lineWidth = 3;
-        context.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-        context.stroke();
-    }
-
     function movePlayer(dt) {
-        const distance = dt * speed;
+        const distance = dt * PLAYER_SPEED;
         for (let key of pressedKeys) {
             switch (key) {
                 case "KeyW":
-                    pos.up(distance);
+                    playerPos.up(distance);
                     break;
                 case "KeyS":
-                    pos.down(distance);
+                    playerPos.down(distance);
                     break;
                 case "KeyA":
-                    pos.left(distance);
+                    playerPos.left(distance);
                     break;
                 case "KeyD":
-                    pos.right(distance);
+                    playerPos.right(distance);
                     break;
                 default:
                     ;
@@ -132,18 +164,21 @@ const CreateGame = function (name) {
         }
     }
 
-    function shootObjects(dt) {
-        // TODO: implement shooting different shapes from the player that roate.
+    function shootBullets(dt) {
+        for (let bullet of bullets) {
+            bullet.update(dt);
+        }
     }
 
     return {
         init(context) {
-            pos.x = context.canvas.width/2;
-            pos.y = context.canvas.height/2;
+            playerPos.x = context.canvas.width/2;
+            playerPos.y = context.canvas.height/2;
         }, 
         update(dt) {
             movePlayer(dt);
             title.update(dt);
+            shootBullets(dt);
         },
         render(context) {
             const width = context.canvas.width;
@@ -151,7 +186,10 @@ const CreateGame = function (name) {
             context.clearRect(0, 0, width, height);
 
             title.render(context);
-            drawCircle(context, pos, radius);
+            drawCircle(context, playerPos, radius);
+            for (let bullet of bullets) {
+                bullet.render(context);
+            }
         },
         keyDown(event) {
             if (event.code in keyState && !keyState[event.code].learned) {
@@ -164,7 +202,14 @@ const CreateGame = function (name) {
             pressedKeys.delete(event.code);
         },
         mouseDown(event) {
-            console.log(`x: (${event.screenX}) y: (${event.screenY})`)
+            const mousePos = new V2(event.screenX, event.screenY);
+            const bulletVel = mousePos
+                                .sub(playerPos)
+                                .normalize()
+                                .scale(BULLET_SPEED);
+            console.log(`x: (${mousePos.x}) y: (${mousePos.y})`);
+
+            bullets.push(CreateBullet(playerPos, bulletVel));
         }
     };
 };
