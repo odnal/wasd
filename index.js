@@ -5,21 +5,15 @@ class V2 {
     }
 
     add(that) {
-        this.x += that.x;
-        this.y += that.y;
-        return this;
+        return new V2(this.x + that.x, this.y + that.y) ;
     }
 
     sub(that) {
-        this.x -= that.x;
-        this.y -= that.y;
-        return this;
+        return new V2(this.x - that.x, this.y - that.y) ;
     }
 
     scale(s) {
-        this.x *= s;
-        this.y *= s;
-        return this;
+        return new V2(this.x * s, this.y * s)
     }
 
     len() {
@@ -31,32 +25,17 @@ class V2 {
         return new V2(this.x / n, this.y / n);
     }
 
+    // Keeping because it is useful to see and object cloned syntactically.
     clone() {
         return new V2(this.x, this.y);
-    }
-
-    up(amount) {
-        this.y += (-amount);
-    }
-
-    down(amount) {
-        this.y += amount;
-    }
-
-    left(amount) {
-        this.x -= amount;
-    }
-
-    right(amount) {
-        this.x += amount;
     }
 }
 
 let keyState = {
-    "KeyW": {label: "W", learned: false, alpha: 1.0},
-    "KeyA": {label: "A", learned: false, alpha: 1.0},
-    "KeyS": {label: "S", learned: false, alpha: 1.0},
-    "KeyD": {label: "D", learned: false, alpha: 1.0},
+    "KeyW": {label: "W", direction: Object.freeze(new V2(0, -1)), learned: false, alpha: 1.0},
+    "KeyA": {label: "A", direction: Object.freeze(new V2(-1, 0)), learned: false, alpha: 1.0},
+    "KeyS": {label: "S", direction: Object.freeze(new V2(0, 1)),  learned: false, alpha: 1.0},
+    "KeyD": {label: "D", direction: Object.freeze(new V2(1, 0)),  learned: false, alpha: 1.0},
 }
 
 function drawCircle(context, playerPos, radius) {
@@ -143,24 +122,15 @@ const CreateGame = function (name) {
     const bullets = [];
 
     function movePlayer(dt) {
-        const distance = dt * PLAYER_SPEED;
+        let vel = new V2(0, 0);
         for (let key of pressedKeys) {
-            switch (key) {
-                case "KeyW":
-                    playerPos.up(distance);
-                    break;
-                case "KeyS":
-                    playerPos.down(distance);
-                    break;
-                case "KeyA":
-                    playerPos.left(distance);
-                    break;
-                case "KeyD":
-                    playerPos.right(distance);
-                    break;
-                default:
-                    ;
+            if (key in keyState) {
+                vel = vel.add(keyState[key].direction);
             }
+        }
+        if (vel.len() > 0) {
+            vel = vel.normalize().scale(dt * PLAYER_SPEED);
+            playerPos = playerPos.add(vel);
         }
     }
 
