@@ -4,6 +4,10 @@ class V2 {
         this.y = y;
     }
 
+    add(that) {
+        this.x + that.x;
+        this.y + that.y;
+    }
     up(amount) {
         this.y += (-amount);
     }
@@ -42,12 +46,6 @@ const GameTitle = function (name) {
                 }
             }
         },
-        fadeIn() {
-            dalpha = 1.0; // increases alpha
-        },
-        fadeOut() {
-            dalpha = -1.0; // decareases alpa
-        },
         render(context) { 
             const centerX = context.canvas.width / 2;
             const centerY = context.canvas.height / 2;
@@ -68,8 +66,26 @@ const GameTitle = function (name) {
                     centerY
                 );
             }
-            
         },
+        fadeIn() {
+            dalpha = 1.0; // increases alpha
+        },
+        fadeOut() {
+            dalpha = -1.0; // decareases alpa
+        },
+    }
+}
+
+const CreateBullet = function(position, velocity) {
+    const pos = position.clone();
+    const vel = position.clone();
+    return {
+        update(dt) {
+            // TODO:
+        },
+        render(context) {
+            // TODO:
+        }
     }
 }
 
@@ -94,31 +110,39 @@ const CreateGame = function (name) {
         context.stroke();
     }
 
+    function movePlayer(dt) {
+        const distance = dt * speed;
+        for (let key of pressedKeys) {
+            switch (key) {
+                case "KeyW":
+                    pos.up(distance);
+                    break;
+                case "KeyS":
+                    pos.down(distance);
+                    break;
+                case "KeyA":
+                    pos.left(distance);
+                    break;
+                case "KeyD":
+                    pos.right(distance);
+                    break;
+                default:
+                    ;
+            }
+        }
+    }
+
+    function shootObjects(dt) {
+        // TODO: implement shooting different shapes from the player that roate.
+    }
+
     return {
         init(context) {
             pos.x = context.canvas.width/2;
             pos.y = context.canvas.height/2;
         }, 
         update(dt) {
-            const distance = dt * speed;
-            for (let key of pressedKeys) {
-                switch (key) {
-                    case "KeyW":
-                        pos.up(distance);
-                        break;
-                    case "KeyS":
-                        pos.down(distance);
-                        break;
-                    case "KeyA":
-                        pos.left(distance);
-                        break;
-                    case "KeyD":
-                        pos.right(distance);
-                        break;
-                    default:
-                        console.log(`${key} not supported.`);
-                }
-            }
+            movePlayer(dt);
             title.update(dt);
         },
         render(context) {
@@ -138,6 +162,9 @@ const CreateGame = function (name) {
         },
         keyUp(event) {
             pressedKeys.delete(event.code);
+        },
+        mouseDown(event) {
+            console.log(`x: (${event.screenX}) y: (${event.screenY})`)
         }
     };
 };
@@ -178,5 +205,9 @@ const CreateGame = function (name) {
 
     window.addEventListener("keyup", event => {
         game.keyUp(event);
+    })
+
+    window.addEventListener("mousedown", event => {
+        game.mouseDown(event);
     })
 })();
