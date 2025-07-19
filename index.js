@@ -68,7 +68,6 @@ function drawCircle(context, playerPos, radius) {
 }
 
 const GameTitle = function (name) {
-
     let dalpha = 0.0;
     const rate = 4.0;
 
@@ -115,32 +114,33 @@ const CreateBullet = function(position, velocity) {
     let pos = position.clone();
     const vel = velocity.clone();
     const BULLET_RADIUS = 42;
+    let lifetime = 1.0;
 
     return {
         update(dt) {
             pos = pos.add(vel);
+            lifetime -= dt*2.0;
         },
         render(context) {
-            console.log(`${pos.x}, ${pos.y}`);
             drawCircle(context, pos, BULLET_RADIUS);
+        },
+        getLifetime() {
+            return lifetime;
         }
     }
 }
 
 const CreateGame = function (name) {
     console.log(`Game "${name}" initialized.`);
-
     const title = GameTitle(name);
-    let alpha = 1;
-    const radius = 69;
     const PLAYER_SPEED = 1000;
     const BULLET_SPEED = 100;
+    let alpha = 1;
+    const radius = 69;
+    let pressedKeys = new Set();
 
     let playerPos = new V2(0, 0);
     const bullets = [];
-
-    let pressedKeys = new Set();
-    console.log(pressedKeys);
 
     function movePlayer(dt) {
         const distance = dt * PLAYER_SPEED;
@@ -188,7 +188,9 @@ const CreateGame = function (name) {
             title.render(context);
             drawCircle(context, playerPos, radius);
             for (let bullet of bullets) {
-                bullet.render(context);
+                if (bullet.getLifetime() > 0.0) {
+                    bullet.render(context);
+                }
             }
         },
         keyDown(event) {
@@ -207,7 +209,9 @@ const CreateGame = function (name) {
                                 .sub(playerPos)
                                 .normalize()
                                 .scale(BULLET_SPEED);
-            console.log(`x: (${mousePos.x}) y: (${mousePos.y})`);
+            // FIXME: if mouse is close and on top of player circle the bullet travels in the opposite direction.
+            console.log(`Player -> x: (${playerPos.x}) y: (${playerPos.y})`); 
+            console.log(`Mouse  -> x: (${mousePos.x})  y: (${mousePos.y})`);
 
             bullets.push(CreateBullet(playerPos, bulletVel));
         }
@@ -233,7 +237,6 @@ const CreateGame = function (name) {
             start = timestamp;
         }
         const dt = (timestamp - start) * 0.001;
-        //console.log(`Elapsed Time: ${dt}`);
         start = timestamp;
 
         game.update(dt);
