@@ -20,6 +20,10 @@ class V2 {
         return Math.sqrt(this.x * this.x + this.y * this.y);
     }
 
+    polar(mag, dir) {
+        return new V2(mag * Math.cos(dir), mag * Math.sin(dir));
+    }
+
     normalize() {
         const n = this.len();
         return new V2(this.x / n, this.y / n);
@@ -90,21 +94,59 @@ const GameTitle = function (name) {
 }
 
 const CreateBullet = function(position, velocity) {
-    let pos = position.clone();
+    let bulletPos = position.clone();
     const vel = velocity.clone();
-    const BULLET_RADIUS = 42;
+    const bulletRadius = 42;
     let lifetime = 1.0;
 
     return {
         update(dt) {
-            pos = pos.add(vel);
+            bulletPos = bulletPos.add(vel);
             lifetime -= dt*2.0;
         },
         render(context) {
-            drawCircle(context, pos, BULLET_RADIUS);
+            drawCircle(context, bulletPos, bulletRadius);
         },
         getLifetime() {
             return lifetime;
+        },
+        setLifetime(val) {
+            lifetime = val;
+        },
+        getPos() {
+            return bulletPos;
+        },
+        getRadi() {
+            return bulletRadius;
+        }
+    }
+}
+
+const CreateEnemy = function(position) {
+    let enempyPos = position.clone();
+    const enemyRadius = 69;
+    const enemySpeed = 1;
+    let ded = false;
+    return {
+        update(dt, playerPos) {
+            let vel = playerPos.sub(enempyPos)
+                            .scale(enemySpeed * dt);
+            enempyPos = enempyPos.add(vel);
+        },
+        render(context) {
+            drawCircle(context, enempyPos, enemyRadius);
+        },
+        getKilled() {
+            return ded;
+        },
+        setKilled() {
+            ded = true;
+        },
+        getPos() {
+            return enempyPos;
+        },
+        getRadi() {
+            return enemyRadius;
         }
     }
 }
@@ -112,14 +154,17 @@ const CreateBullet = function(position, velocity) {
 const CreateGame = function (name) {
     console.log(`Game "${name}" initialized.`);
     const title = GameTitle(name);
-    const PLAYER_SPEED = 1000;
-    const BULLET_SPEED = 100;
+    const playerSpeed = 1000;
+    const bulletSpeed = 100;
+    let enemySpawnRate = 1.0;
+    let enemySpawnCoolDown = enemySpawnRate;
     let alpha = 1;
     const radius = 69;
     let pressedKeys = new Set();
 
     let playerPos = new V2(0, 0);
-    const bullets = [];
+    let bullets = [];
+    let enemies = [];
 
     function movePlayer(dt) {
         let vel = new V2(0, 0);
@@ -129,7 +174,7 @@ const CreateGame = function (name) {
             }
         }
         if (vel.len() > 0) {
-            vel = vel.normalize().scale(dt * PLAYER_SPEED);
+            vel = vel.normalize().scale(dt * playerSpeed);
             playerPos = playerPos.add(vel);
         }
     }
@@ -138,6 +183,49 @@ const CreateGame = function (name) {
         for (let bullet of bullets) {
             bullet.update(dt);
         }
+    }
+
+    function spawnEnemy(dt) {
+        enemySpawnCoolDown -= dt;
+        if (enemies.length >= 0) {
+            let dir = Math.random() * 2 * Math.PI;
+            let playerRefPos = playerPos.clone();
+            let spawnDis = 2000;
+            let polarPos = playerRefPos.add(playerRefPos.polar(spawnDis, dir));
+            if (enemySpawnCoolDown <= 0.0) {
+                enemies.push(CreateEnemy(polarPos));
+                enemySpawnCoolDown = enemySpawnRate;
+                enemySpawnRate = Math.max(0.01, enemySpawnCoolDown - 0.01);
+            }
+            //console.log(`enemies.length: ${enemies.length}`);
+            //console.log(`enemySpawnCoolDown: ${enemySpawnCoolDown}`);
+        }
+        for (let enemy of enemies) {
+            enemy.update(dt, playerPos);
+        }
+    }
+
+    function killedEnemy() {
+        for (let enemy of enemies) {
+            for (let bullet of bullets) {
+                if (!enemy.getKilled() && enemy.getPos().sub(bullet.getPos()).len()
+                                        <= enemy.getRadi() + bullet.getRadi()) 
+                {
+                    enemy.setKilled(true);
+                    bullet.setLifetime(0);
+                }
+            }
+        }
+    }
+
+    function filterDeadEnemies(enemies) {
+        let aliveEnemies = [];
+        for (let enemy of enemies) {
+            if (!enemy.getKilled()) {
+                aliveEnemies.push(enemy);
+            }
+        }
+        return aliveEnemies;
     }
 
     return {
@@ -149,6 +237,9 @@ const CreateGame = function (name) {
             movePlayer(dt);
             title.update(dt);
             shootBullets(dt);
+            spawnEnemy(dt);
+            killedEnemy();
+            enemies = filterDeadEnemies(enemies);
         },
         render(context) {
             const width = context.canvas.width;
@@ -161,6 +252,10 @@ const CreateGame = function (name) {
                 if (bullet.getLifetime() > 0.0) {
                     bullet.render(context);
                 }
+            }
+
+            for (let enemy of enemies) {
+                enemy.render(context);
             }
         },
         keyDown(event) {
@@ -178,13 +273,9 @@ const CreateGame = function (name) {
             const bulletVel = mousePos
                                 .sub(playerPos)
                                 .normalize()
-                                .scale(BULLET_SPEED);
-            // FIXME: if mouse is close and on top of player circle the bullet travels in the opposite direction.
-            console.log(`Player -> x: (${playerPos.x}) y: (${playerPos.y})`); 
-            console.log(`Mouse  -> x: (${mousePos.x})  y: (${mousePos.y})`);
-
+                                .scale(bulletSpeed);
             bullets.push(CreateBullet(playerPos, bulletVel));
-        }
+        },
     };
 };
 
